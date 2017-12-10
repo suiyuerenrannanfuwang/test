@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.itheima.mapper.UserMapper">
+
+    <sql id="query_user_where">
+        <if test="user != null">
+            <if test="user.username != null and user.username != ''">
+                <!--拼接sql-->
+                and username LIKE '%${user.username}%'
+            </if>
+            <if test="user.sex != null and user.sex != ''">
+                and sex = #{user.sex}
+            </if>
+            <if test="ids != null and ids.size > 0">
+                <foreach collection="ids" item="id" open="AND id IN (" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+        </if>
+    </sql>
+
+    <!--根据id查询客户-->
+    <select id="findUserById" parameterType="int" resultType="com.itheima.domain.User">
+        SELECT * from user where id = #{id}
+    </select>
+
+    <!--综合条件查询客户-->
+    <select id="findUserList" parameterType="queryUserVo" resultType="user">
+        SELECT id,username,birthday,sex,address FROM user
+        <where>
+            <!--引入sql片段-->
+            <include refid="query_user_where"/>
+        </where>
+    </select>
+
+    <!--查询客户总条数-->
+    <select id="findUserCount" parameterType="queryUserVo" resultType="int">
+        select COUNT(*) from USER
+        <where>
+            <include refid="query_user_where"/>
+        </where>
+    </select>
+
+    <!--传递hashmap综合查询用户信息-->
+    <select id="findUserByHashmap" parameterType="hashmap" resultType="user">
+        select * from USER where id = #{id} and username = #{username}
+    </select>
+
+    <!--传递单个list查询客户-->
+    <select id="findUserByList" parameterType="java.util.List" resultType="user">
+        SELECT * from USER
+        <where>
+            <if test="list != null">
+                <foreach collection="list" item="item" open="and id in (" close=")" separator=",">
+                    #{item.id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    
+    <!--传递单个数组查询-->
+    <select id="findUserByArray" parameterType="Object[]" resultType="user">
+        SELECT * from USER
+        <where>
+            <if test="array != null">
+                <foreach collection="array" index="index" item="item" open="and id in (" close=")" separator=",">
+                    #{item.id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.itheima.mapper.OrdersMapper">
+
+    <resultMap type="orders" id="ordersAndUserByResultMap">
+        <!--订单信息的映射配置-->
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="number" property="number"/>
+        <result column="createtime" property="createtime"/>
+        <result column="note" property="note"/>
+        <!--用户信息的映射配置 一对一-->
+        <association property="user" javaType="com.itheima.domain.User">
+            <id column="user_id" property="id"/>
+            <result column="username" property="username"/>
+            <result column="address" property="address"/>
+        </association>
+    </resultMap>
+
+    <!--映射订单信息和用户信息采用继承-->
+    <resultMap id="ordersAndOrderDetailByResultMap" type="orders" extends="ordersAndUserByResultMap">
+        <!--映射明细信息 一对多-->
+        <collection property="orderdetails" ofType="com.itheima.domain.Orderdetail">
+            <id column="orderdetail_id" property="id"/>
+            <result column="id" property="ordersId"/>
+            <result column="items_id" property="itemsId"/>
+            <result column="items_num" property="itemsNum"/>
+        </collection>
+    </resultMap>
+
+    <!--查询用户及用户购买的商品信息-->
+    <resultMap id="userAndItemsByResultMap" type="user">
+        <!--映射用户信息-->
+        <id column="user_id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="address" property="address"/>
+        <!--映射订单信息 一对多-->
+        <collection property="ordersList" ofType="com.itheima.domain.Orders">
+            <id column="id" property="id"/>
+            <result column="user_id" property="userId"/>
+            <result column="number" property="number"/>
+            <result column="createtime" property="createtime"/>
+            <result column="note" property="note"/>
+            <!--映射明细信息  一对多-->
+            <collection property="orderdetails" ofType="com.itheima.domain.Orderdetail">
+                <id column="orderdetail_id" property="id"/>
+                <result column="items_id" property="itemsId"/>
+                <result column="items_num" property="itemsNum"/>
+                <!--映射商品信息  一对一-->
+                <association property="items" javaType="com.itheima.domain.Items">
+                    <id column="items_id" property="id"/>
+                    <result column="items_name" property="name"/>
+                    <result column="items_pic" property="pic"/>
+                </association>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <!--查询订单关联查询客户  使用resultType-->
+    <select id="findOrdersAndUserByResultType" resultType="com.itheima.domain.OrdersCustom">
+        SELECT orders.*,user.username,user.address from orders,user where orders.user_id = user.id
+    </select>
+
+    <!--查询订单关联查询客户  使用resultMap-->
+    <select id="findOrdersAndUserByResultMap" resultMap="ordersAndUserByResultMap">
+        select orders.*,user.username,user.address from orders,user where orders.user_id = user.id
+    </select>
+
+    <!--查询订单关联查询明细-->
+    <select id="findOrdersAndOrderDetail" resultMap="ordersAndOrderDetailByResultMap">
+        select orders.*,user.username,user.address,
+        orderdetail.id orderdetail_id,orderdetail.items_id,orderdetail.items_num
+        from orders,user,orderdetail
+        where orders.user_id = user.id and orders.id = orderdetail.orders_id
+    </select>
+    
+    <!--查询用户信息关联商品信息 多对多-->
+    <select id="findUserAndItems" resultMap="userAndItemsByResultMap">
+        select orders.*,user.username,user.address,
+        orderdetail.id orderdetail_id,orderdetail.items_id,orderdetail.items_num,
+        items.name items_name,items.pic items_pic
+        from orders,user,orderdetail,items
+        where orders.user_id = user.id
+        AND orderdetail.orders_id = orders.id
+        AND items.id = orderdetail.items_id
+    </select>
+
+    <!--查询订单延迟加载用户-->
+    <resultMap id="ordersLazyLoadingUser" type="orders">
+        <!--订单信息映射-->
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="number" property="number"/>
+        <result column="createtime" property="createtime"/>
+        <result column="note" property="note"/>
+        <!--一个订单只能属于一个用户，延迟加载用户信息，select就是延迟加载的语句，column指的是关联查询的外键-->
+        <association property="user" javaType="com.itheima.domain.User"
+                     select="com.itheima.mapper.UserMapper.findUserById" column="user_id">
+        </association>
+
+    </resultMap>
+
+    <!--查询订单延迟加载用户-->
+    <select id="findOrdersLazyLoadingUser" resultMap="ordersLazyLoadingUser">
+        select * from orders
+    </select>
+</mapper>
